@@ -1,0 +1,27 @@
+# Model weights (large — download via huggingface_hub in notebooks)
+models/
+*.pth
+*.pt
+*.onnx
+
+# Data (large or regeneratable — do not commit)
+data/frames/
+data/results/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.ipynb_checkpoints/
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+.env
+
+# Platform
+.kaggle/
+
+# Generated files
+*.csv

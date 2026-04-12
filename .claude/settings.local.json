@@ -1,0 +1,32 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:paperswithcode.com)",
+      "WebFetch(domain:arxiv.org)",
+      "WebSearch",
+      "Read(//c/tmp/**)",
+      "Bash(curl -s \"https://api.github.com/search/repositories?q=torchreid+deep-person-reid&sort=stars&per_page=5\")",
+      "Bash(curl -s \"https://api.github.com/search/repositories?q=BoxMOT+tracking&sort=stars&per_page=5\")",
+      "Bash(curl -s \"https://api.github.com/search/repositories?q=supervision+roboflow&sort=stars&per_page=5\")",
+      "Bash(curl -s \"https://api.github.com/repos/roboflow/supervision\")",
+      "WebFetch(domain:kaiyangzhou.github.io)",
+      "WebFetch(domain:supervision.roboflow.com)",
+      "Bash(curl -s \"https://raw.githubusercontent.com/KaiyangZhou/deep-person-reid/master/README.md\")",
+      "Bash(curl -s \"https://raw.githubusercontent.com/KaiyangZhou/deep-person-reid/main/README.md\")",
+      "Bash(curl -s \"https://api.github.com/repos/KaiyangZhou/deep-person-reid/contents\")",
+      "Bash(curl -s \"https://raw.githubusercontent.com/KaiyangZhou/deep-person-reid/master/README.rst\")",
+      "Bash(curl -s \"https://raw.githubusercontent.com/mikel-brostrom/boxmot/master/README.md\")",
+      "Bash(curl -s \"https://raw.githubusercontent.com/roboflow/supervision/develop/README.md\")",
+      "Bash(curl -s \"https://api.github.com/repos/roboflow/supervision/contents/supervision\")",
+      "WebFetch(domain:pypi.org)",
+      "Bash(curl -s \"https://api.github.com/repos/roboflow/supervision/contents/supervision/detection/tools\")",
+      "Bash(curl -s \"https://api.github.com/repos/roboflow/supervision/contents\")",
+      "Bash(curl -s \"https://api.github.com/repos/KaiyangZhou/deep-person-reid/commits?per_page=1\")",
+      "Bash(curl -s \"https://api.github.com/repos/mikel-brostrom/boxmot/commits?per_page=1\")",
+      "Bash(curl -s \"https://api.github.com/repos/roboflow/supervision/commits?per_page=1\")",
+      "Bash(cp \"gpt-5.2-research.md\" \"docs/research/gpt-5.2-research.md\")",
+      "Bash(cp \"sonnet-4.6-research.md\" \"docs/research/sonnet-4.6-research.md\")"
+    ]
+  }
+}

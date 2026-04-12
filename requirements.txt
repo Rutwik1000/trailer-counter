@@ -1,0 +1,47 @@
+# Trailer Counter — Python dependencies
+# Python 3.10 or 3.11 required (rfdetr incompatible with 3.12+)
+# Install: pip install -r requirements.txt
+
+# Detection
+rfdetr>=1.0.0
+ultralytics>=8.0.0
+
+# Tracking + Re-ID integration
+# NOTE: boxmot is AGPL-3.0 — review before commercial deployment
+boxmot>=17.0.0
+
+# Zone detection + annotation
+supervision>=0.27.0
+
+# Re-ID backbone (DINOv3)
+transformers>=4.56.0
+
+# Model weight downloads
+huggingface_hub>=0.23.0
+
+# Dataset access (fuxi-robot, keremberke)
+datasets>=2.19.0
+
+# Video I/O, preprocessing, polygon ops
+opencv-python>=4.9.0
+
+# Numerical / ML utilities
+numpy>=1.26.0
+scikit-learn>=1.4.0
+torch>=2.2.0
+torchvision>=0.17.0
+Pillow>=10.3.0
+
+# Dashboard
+streamlit>=1.35.0
+plotly>=5.20.0
+pandas>=2.2.0
+
+# Polygon geometry
+shapely>=2.0.0
+
+# Testing
+pytest>=8.2.0
+
+# Utilities
+tqdm>=4.66.0
