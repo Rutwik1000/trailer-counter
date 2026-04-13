@@ -159,7 +159,7 @@ grep -c '"outputs": \[\]' notebooks/0N_phase.ipynb
 !git add data/results/
 !git diff --stat HEAD       # confirm ONLY result JSONs are staged
 !git commit -m "data: daily count results YYYY-MM-DD — phase N output"
-!git push origin master
+!git push origin HEAD:master  # HEAD:master works regardless of local branch name (main vs master)
 ```
 
 Only commit after the full pipeline run completes without error. Never commit partial results.
