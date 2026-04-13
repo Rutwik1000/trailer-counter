@@ -93,7 +93,8 @@ repo_path = "/kaggle/working/trailer-counter"
 if not os.path.exists(repo_path):
     os.system(f"git clone https://github.com/Rutwik1000/trailer-counter.git {repo_path}")
 os.chdir(repo_path)
-os.system("git pull origin master")
+os.system("git fetch origin")
+os.system("git reset --hard origin/master")  # always match remote exactly — never fails on divergent branches
 os.system("git log --oneline -3")  # confirm latest commit is present
 
 # Cell 2 — Install dependencies
