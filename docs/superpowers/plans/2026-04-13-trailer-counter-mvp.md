@@ -16,6 +16,7 @@
 
 | Phase | Name | Shippable Output | First "real" count available |
 |---|---|---|---|
+| 0B | Dependency Verification | Confirmed model IDs, weights, dataset schema | — |
 | 1 | Foundation & Data | Verified sample frames from fuxi-robot | — |
 | 2 | Detection Baseline | Detector scoring on sample frames | — |
 | 3 | Tracking + Loading Zone | Tracked video with zone overlay | — |
@@ -24,6 +25,7 @@
 | 6 | Dashboard | Streamlit dashboard with video playback | YES (visible) |
 
 > **Phase 4 is the first shippable MVP.** Phases 5 and 6 add identity breakdown and visual output on top of a working count.
+> **Phase 0B must complete before Phase 1 begins.** It resolves three critical blockers identified in the senior engineer review (2026-04-13).
 
 ---
 
@@ -67,6 +69,124 @@ trailer-counter/
 - `event_counter.py` only knows about state transitions (entered zone / left zone / count). It does not know about video or models.
 - `reid_gallery.py` only knows about embeddings and matching. It does not know about tracking.
 - `detector.py` only wraps the chosen model. It does not know about tracking or zones.
+
+---
+
+## Phase 0B: Dependency Verification (Pre-Implementation)
+
+> **Run this before writing any code.** Resolves CRITICAL issues C1, C2 and HIGH issues H1, H2 from the senior engineer review. Takes ~15 minutes on Kaggle. Record the results and update docs accordingly before beginning Phase 1.
+
+#### IN SCOPE
+- Verify SiteSense weights repo is accessible and files are downloadable
+- Identify correct HuggingFace model ID for the vision backbone (DINOv3 or DINOv2)
+- Confirm fuxi-robot dataset field names from actual schema
+- Confirm RF-DETR Python API method names
+
+#### OUT OF SCOPE — DO NOT ADD
+- No model loading in full (just verify accessibility)
+- No frame extraction
+- No pipeline code
+
+---
+
+#### Task 0B.1: Run dependency verification cells in notebook
+
+In a fresh Kaggle/Colab notebook:
+
+- [ ] **Step 1: Verify SiteSense weights (C2)**
+
+```python
+from huggingface_hub import list_repo_files
+
+try:
+    files = list(list_repo_files("Zaafan/sitesense-weights"))
+    print("SiteSense repo accessible. Files:", files)
+    has_rfdetr = any("rfdetr" in f for f in files)
+    has_reid_head = any("reid_head" in f for f in files)
+    print(f"RF-DETR weights present: {has_rfdetr}")
+    print(f"Re-ID head weights present: {has_reid_head}")
+except Exception as e:
+    print(f"REPO NOT ACCESSIBLE: {e}")
+    print("ACTION REQUIRED: See Contingency C2A and C2B in docs/DECISIONS.md")
+```
+
+**If PASS:** `has_rfdetr=True` and `has_reid_head=True` → proceed with original plan.
+**If FAIL:** Apply Contingency C2A (detector) and/or C2B (Re-ID) from `docs/DECISIONS.md`.
+
+- [ ] **Step 2: Verify backbone model ID (C1)**
+
+```python
+from transformers import AutoConfig
+
+# Try the original plan's model ID
+try:
+    cfg = AutoConfig.from_pretrained("facebook/dinov3-vitb16-pretrain-lvd1689m")
+    print(f"DINOv3 model found. hidden_size: {cfg.hidden_size}")
+    BACKBONE_ID = "facebook/dinov3-vitb16-pretrain-lvd1689m"
+    BACKBONE_DIM = cfg.hidden_size
+except Exception as e:
+    print(f"DINOv3 ID not found: {e}")
+    # Fallback: DINOv2
+    cfg2 = AutoConfig.from_pretrained("facebook/dinov2-base")
+    print(f"DINOv2-base available. hidden_size: {cfg2.hidden_size}")
+    BACKBONE_ID = "facebook/dinov2-base"
+    BACKBONE_DIM = cfg2.hidden_size
+
+print(f"\nBACKBONE_ID = {BACKBONE_ID}")
+print(f"BACKBONE_DIM = {BACKBONE_DIM}  ← use this in ReIDHead(in_dim=...)")
+```
+
+**Record** `BACKBONE_ID` and `BACKBONE_DIM`. Update ADR-006 and ARCHITECTURE.md with the confirmed values.
+
+- [ ] **Step 3: Verify fuxi-robot dataset schema (H1)**
+
+```python
+from datasets import load_dataset
+
+ds = load_dataset("fuxi-robot/excavator-video", split="train", streaming=True)
+sample = next(iter(ds))
+print("Top-level keys:", list(sample.keys()))
+# Inspect nested structure
+for k, v in sample.items():
+    print(f"  {k}: type={type(v).__name__}", end="")
+    if isinstance(v, dict):
+        print(f", subkeys={list(v.keys())}", end="")
+    print()
+```
+
+**Record** the actual field name for the video bytes. Update Task 1.3 `sample["video"]["bytes"]` with the correct path.
+
+- [ ] **Step 4: Verify RF-DETR API (H2)**
+
+```python
+from rfdetr import RFDETRBase
+import inspect
+
+methods = [m for m in dir(RFDETRBase) if not m.startswith("_")]
+print("RFDETRBase public methods:", methods)
+
+# Check for the methods used in detector.py
+for expected in ["from_checkpoint", "predict"]:
+    print(f"  {expected}: {'FOUND' if expected in methods else 'MISSING'}")
+```
+
+**If `from_checkpoint` is missing:** Update `_load_model` in `src/detector.py` to use the correct constructor.
+**If `predict` is missing:** Update `_detect_rfdetr` to use the correct inference method name.
+
+- [ ] **Step 5: Document results**
+
+Update the following before proceeding to Phase 1:
+- `docs/DECISIONS.md` ADR-006: confirm or update backbone ID and head dimensions
+- `docs/ARCHITECTURE.md` Re-ID Pipeline: confirm or update the CLS token dimension
+- `docs/superpowers/plans/2026-04-13-trailer-counter-mvp.md` Task 1.3: update video field access pattern
+- `docs/superpowers/plans/2026-04-13-trailer-counter-mvp.md` Task 2.1: update RF-DETR API calls if needed
+
+- [ ] **Step 6: Commit verification results**
+
+```bash
+git add docs/DECISIONS.md docs/ARCHITECTURE.md docs/superpowers/plans/2026-04-13-trailer-counter-mvp.md
+git commit -m "docs: phase 0B - dependency verification results, update model IDs and API"
+```
 
 ---
 
@@ -289,6 +409,62 @@ git commit -m "feat: phase 1 - foundation, dataset access, frame extraction"
 
 ---
 
+#### Task 1.4: Create `src/preprocessor.py` (CLAHE dust preprocessing)
+
+> Moved from Phase 6 to Phase 1 — CLAHE must be applied in all pipeline notebooks from Phase 2 onward.
+
+**Files:**
+- Create: `src/preprocessor.py`
+
+- [ ] **Step 1: Write `src/preprocessor.py`**
+
+```python
+# src/preprocessor.py
+"""CLAHE dust preprocessing. Applied to each frame before detection."""
+import cv2
+import numpy as np
+
+_clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+
+
+def apply_clahe(frame: np.ndarray) -> np.ndarray:
+    """
+    Apply CLAHE to the L channel of LAB colorspace to improve visibility in dust/haze.
+
+    Args:
+        frame: BGR numpy array (H, W, 3)
+    Returns:
+        Enhanced BGR numpy array, same shape and dtype
+    """
+    lab = cv2.cvtColor(frame, cv2.COLOR_BGR2LAB)
+    lab[:, :, 0] = _clahe.apply(lab[:, :, 0])
+    return cv2.cvtColor(lab, cv2.COLOR_LAB2BGR)
+```
+
+- [ ] **Step 2: Verify in notebook**
+
+```python
+from src.preprocessor import apply_clahe
+import cv2, glob
+
+frame = cv2.imread(sorted(glob.glob("data/frames/*.jpg"))[0])
+enhanced = apply_clahe(frame)
+assert enhanced.shape == frame.shape, "Shape mismatch"
+assert enhanced.dtype == frame.dtype, "Dtype mismatch"
+print("CLAHE preprocessing OK")
+```
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add src/preprocessor.py
+git commit -m "feat: phase 1 - CLAHE preprocessor (apply before detection in all phases)"
+```
+
+> **Apply CLAHE from Phase 2 onward.** In all pipeline notebooks (02 through 06), add `frame = apply_clahe(raw_frame)` before calling `detector.detect(frame)`.
+
+---
+
 ### Phase 2: Detection Baseline
 
 #### IN SCOPE
@@ -318,8 +494,12 @@ git commit -m "feat: phase 1 - foundation, dataset access, frame extraction"
 
 ```python
 # tests/test_detector.py
+import cv2
+import glob
 import numpy as np
+import pytest
 from src.detector import Detector
+
 
 def test_detector_returns_list():
     """Detector must return a list (possibly empty) for any valid frame."""
@@ -328,15 +508,38 @@ def test_detector_returns_list():
     results = det.detect(dummy_frame)
     assert isinstance(results, list)
 
+
 def test_detector_result_schema():
     """Each detection must be a dict with keys: bbox, confidence, class_id."""
     dummy_frame = np.zeros((384, 480, 3), dtype=np.uint8)
     det = Detector(model_type="yolo")
     results = det.detect(dummy_frame)
     for r in results:
-        assert "bbox" in r         # [x1, y1, x2, y2]
-        assert "confidence" in r   # float 0-1
-        assert "class_id" in r     # int
+        assert "bbox" in r and len(r["bbox"]) == 4   # [x1, y1, x2, y2]
+        assert "confidence" in r
+        assert 0.0 <= r["confidence"] <= 1.0
+        assert "class_id" in r and isinstance(r["class_id"], int)
+
+
+def test_detector_on_real_frame():
+    """
+    Detector output schema must be valid on a real sample frame.
+    Skips if no frames have been extracted yet (Phase 1 not done).
+    """
+    frame_paths = sorted(glob.glob("data/frames/*.jpg"))
+    if not frame_paths:
+        pytest.skip("No sample frames available — run Phase 1 (Task 1.3) first")
+    frame = cv2.imread(frame_paths[0])
+    assert frame is not None, "cv2.imread returned None"
+    det = Detector(model_type="yolo")
+    results = det.detect(frame)
+    assert isinstance(results, list)
+    for r in results:
+        assert "bbox" in r and len(r["bbox"]) == 4
+        x1, y1, x2, y2 = r["bbox"]
+        assert x2 > x1 and y2 > y1, "Invalid bbox: x2 must be > x1 and y2 > y1"
+        assert 0.0 <= r["confidence"] <= 1.0
+        assert isinstance(r["class_id"], int)
 ```
 
 - [ ] **Step 2: Run test — verify it FAILS**
@@ -453,6 +656,7 @@ In `notebooks/02_detection.ipynb`:
 ```python
 import cv2, glob, json
 from src.detector import Detector
+from src.preprocessor import apply_clahe
 
 sample_frames = sorted(glob.glob("data/frames/*.jpg"))[:10]
 
@@ -464,6 +668,7 @@ for model_type, weights in [
     total_boxes = 0
     for path in sample_frames:
         frame = cv2.imread(path)
+        frame = apply_clahe(frame)  # dust preprocessing (Task 1.4)
         results = det.detect(frame)
         total_boxes += len(results)
         # Draw boxes on frame for visual inspection
@@ -1020,6 +1225,200 @@ git commit -m "feat: phase 4 - fill event counter, daily JSON output"
 
 ---
 
+#### Task 4.2: Create `run_pipeline.py` CLI entry point
+
+**Files:**
+- Create: `run_pipeline.py` (project root)
+
+- [ ] **Step 1: Write `run_pipeline.py`**
+
+```python
+# run_pipeline.py
+"""
+CLI entry point for the trailer counter pipeline.
+Usage: python run_pipeline.py --video path/to/video.mp4 --date 2026-04-13
+"""
+from __future__ import annotations
+import argparse
+import cv2
+import os
+from datetime import datetime
+from src.detector import Detector
+from src.tracker import Tracker
+from src.zone import LoadingZone
+from src.event_counter import FillEventCounter
+from src.preprocessor import apply_clahe
+
+
+def run(
+    video_path: str,
+    date: str,
+    zone_path: str = "config/loading_zone.json",
+    output_dir: str = "data/results",
+    model_type: str = "rfdetr",
+    weights_path: str = "models/rfdetr_construction.pth",
+) -> str:
+    """
+    Run the fill-counting pipeline on a single video file.
+    Returns path to the written JSON results file.
+    """
+    detector = Detector(model_type=model_type, weights_path=weights_path)
+    tracker = Tracker()
+    zone = LoadingZone.load(zone_path)
+    counter = FillEventCounter()
+
+    cap = cv2.VideoCapture(video_path)
+    if not cap.isOpened():
+        raise FileNotFoundError(f"Cannot open video: {video_path}")
+
+    prev_ids: set[int] = set()
+    frame_num = 0
+
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            break
+        frame = apply_clahe(frame)
+        detections = detector.detect(frame)
+        tracks = tracker.update(detections, frame)
+        current_ids = {t["track_id"] for t in tracks}
+
+        for t in tracks:
+            counter.update(t["track_id"], zone.bbox_in_zone(t["bbox"]), frame_num)
+        for tid in prev_ids - current_ids:
+            counter.track_lost(tid, frame_num)
+
+        prev_ids = current_ids
+        frame_num += 1
+
+    cap.release()
+    os.makedirs(output_dir, exist_ok=True)
+    out_path = os.path.join(output_dir, f"{date}.json")
+    counter.save(out_path, date=date)
+    print(f"Done: {counter.total_fills()} fills → {out_path}")
+    return out_path
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Trailer Counter pipeline")
+    parser.add_argument("--video", required=True, help="Path to input MP4 video")
+    parser.add_argument("--date", default=datetime.now().strftime("%Y-%m-%d"),
+                        help="Processing date (YYYY-MM-DD), default: today")
+    parser.add_argument("--zone", default="config/loading_zone.json",
+                        help="Loading zone JSON path")
+    parser.add_argument("--model", default="rfdetr", choices=["rfdetr", "yolo"],
+                        help="Detector backend")
+    parser.add_argument("--weights", default="models/rfdetr_construction.pth",
+                        help="Model weights path")
+    args = parser.parse_args()
+    run(args.video, args.date, args.zone, model_type=args.model, weights_path=args.weights)
+```
+
+- [ ] **Step 2: Verify `--help` works**
+
+```bash
+python run_pipeline.py --help
+```
+
+Expected: prints usage without error.
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add run_pipeline.py
+git commit -m "feat: phase 4 - run_pipeline.py CLI entry point"
+```
+
+---
+
+#### Task 4.3: Add integration test
+
+**Files:**
+- Create: `tests/test_integration.py`
+
+- [ ] **Step 1: Write failing test**
+
+```python
+# tests/test_integration.py
+"""
+Smoke integration test: verifies the zone + counter pipeline produces
+a correctly structured JSON output with expected fill count.
+No real model weights required — simulates zone/counter logic directly.
+"""
+import json
+import os
+import tempfile
+from src.zone import LoadingZone
+from src.event_counter import FillEventCounter
+
+
+def test_pipeline_produces_correct_json():
+    """End-to-end test: zone + counter → JSON matches expected count."""
+    with tempfile.TemporaryDirectory() as tmp:
+        zone = LoadingZone(polygon=[[100, 100], [300, 100], [300, 300], [100, 300]])
+        counter = FillEventCounter()
+
+        # Simulate: track 1 enters zone frame 5, departs frame 12 → 1 fill
+        counter.update(track_id=1, in_zone=True, frame_number=5)
+        counter.update(track_id=1, in_zone=True, frame_number=6)
+        counter.track_lost(track_id=1, frame_number=12)
+
+        # Simulate: track 2 never enters zone → 0 fills
+        counter.update(track_id=2, in_zone=False, frame_number=5)
+        counter.track_lost(track_id=2, frame_number=15)
+
+        output_path = os.path.join(tmp, "2026-04-13.json")
+        counter.save(output_path, date="2026-04-13")
+
+        assert os.path.exists(output_path)
+        with open(output_path) as f:
+            result = json.load(f)
+
+        assert result["date"] == "2026-04-13"
+        assert result["total_fills"] == 1
+        assert len(result["events"]) == 1
+        assert result["events"][0]["track_id"] == 1
+        assert result["events"][0]["zone_entry_frame"] == 5
+        assert result["events"][0]["departure_frame"] == 12
+
+
+def test_zone_save_and_load_round_trip(tmp_path):
+    """Zone serialisation: save → load → same polygon coordinates."""
+    polygon = [[10, 20], [200, 20], [200, 300], [10, 300]]
+    zone = LoadingZone(polygon=polygon)
+    path = str(tmp_path / "zone.json")
+    zone.save(path)
+    loaded = LoadingZone.load(path)
+    assert loaded.polygon == polygon
+    assert loaded.bbox_in_zone([50, 50, 150, 150]) is True   # centroid (100,100) inside
+    assert loaded.bbox_in_zone([0, 0, 5, 5]) is False         # centroid (2.5,2.5) outside
+```
+
+- [ ] **Step 2: Run test — verify it FAILS**
+
+```bash
+pytest tests/test_integration.py -v
+```
+
+Expected: `ImportError` or `ModuleNotFoundError` (src modules not yet implemented).
+
+- [ ] **Step 3: Run test after Phase 4 modules are in place — verify PASS**
+
+```bash
+pytest tests/test_integration.py -v
+```
+
+Expected: both tests PASS.
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add tests/test_integration.py
+git commit -m "test: add integration smoke tests for zone + counter pipeline"
+```
+
+---
+
 ## Chunk 3: Phases 5–6 (Re-ID + Dashboard)
 
 ---
@@ -1198,10 +1597,17 @@ backbone.eval()
 
 # Reconstruct SiteSense projection head: 1536 → 256 → 128
 class ReIDHead(nn.Module):
-    def __init__(self):
+    def __init__(self, in_dim: int = 1536):
+        """
+        Args:
+            in_dim: CLS token dimension from backbone.
+                    1536 for DINOv3-vitb16, 768 for DINOv2-base.
+                    Set from BACKBONE_DIM confirmed in Phase 0B.
+        """
         super().__init__()
         self.proj = nn.Sequential(
-            nn.Linear(1536, 256),
+            nn.Linear(in_dim, 256),
+            nn.ReLU(),              # activation between layers — required for correct weight loading
             nn.Linear(256, 128),
         )
 
@@ -1209,11 +1615,11 @@ class ReIDHead(nn.Module):
         out = self.proj(x)
         return out / out.norm(dim=-1, keepdim=True)  # L2 normalize
 
-head = ReIDHead()
+head = ReIDHead(in_dim=BACKBONE_DIM)  # BACKBONE_DIM confirmed in Phase 0B (1536 or 768)
 head.load_state_dict(torch.load("models/dinov3_reid_head.pth", map_location="cpu"))
 head.eval()
 
-print("DINOv3 + ReID head loaded")
+print(f"Backbone {BACKBONE_ID} + ReID head loaded (in_dim={BACKBONE_DIM})")
 ```
 
 - [ ] **Step 2: Embedding extraction function**
@@ -1297,30 +1703,14 @@ git commit -m "feat: phase 5 - dinov3 reid, per-vehicle fill counts"
 
 ---
 
-#### Task 6.1: Create `src/preprocessor.py` and `src/video_annotator.py`
+#### Task 6.1: Create `src/video_annotator.py`
+
+> `src/preprocessor.py` was created in Phase 1 (Task 1.4) — do NOT recreate it here.
 
 **Files:**
-- Create: `src/preprocessor.py`
 - Create: `src/video_annotator.py`
 
-- [ ] **Step 1: Write `src/preprocessor.py`**
-
-```python
-# src/preprocessor.py
-"""CLAHE dust preprocessing. Applied to each frame before detection."""
-import cv2
-import numpy as np
-
-_clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
-
-def apply_clahe(frame: np.ndarray) -> np.ndarray:
-    """Apply CLAHE to the L channel of LAB color space. Returns BGR."""
-    lab = cv2.cvtColor(frame, cv2.COLOR_BGR2LAB)
-    lab[:, :, 0] = _clahe.apply(lab[:, :, 0])
-    return cv2.cvtColor(lab, cv2.COLOR_LAB2BGR)
-```
-
-- [ ] **Step 2: Write `src/video_annotator.py`**
+- [ ] **Step 1: Write `src/video_annotator.py`**
 
 ```python
 # src/video_annotator.py
@@ -1393,13 +1783,19 @@ with open(result_path) as f:
 # KPI
 col1, col2 = st.columns(2)
 col1.metric("Total Fills", data["total_fills"])
-col2.metric("Unique Vehicles", len(set(e.get("vehicle_id", 0) for e in data["events"])))
+# vehicle_id added in Phase 5 — fall back to track_id for Phase 4 output
+col2.metric("Unique Vehicles", len(set(
+    e.get("vehicle_id", e.get("track_id", 0)) for e in data["events"]
+)))
 
 st.divider()
 
 # Per-vehicle table
 if data["events"]:
     df = pd.DataFrame(data["events"])
+    # Phase 4 output has no vehicle_id (added in Phase 5) — fall back to track_id
+    if "vehicle_id" not in df.columns:
+        df["vehicle_id"] = df["track_id"]
     vehicle_summary = (
         df.groupby("vehicle_id")
           .agg(fill_count=("vehicle_id", "count"),
@@ -1470,10 +1866,15 @@ git commit -m "feat: phase 6 - streamlit dashboard, CLAHE preprocessing, video a
 pytest tests/ -v
 
 # Run by phase
+pytest tests/test_detector.py -v      # Phase 2
 pytest tests/test_zone.py -v          # Phase 3
 pytest tests/test_event_counter.py -v # Phase 4
+pytest tests/test_integration.py -v   # Phase 4 (integration smoke)
 pytest tests/test_reid_gallery.py -v  # Phase 5
 ```
+
+> `test_detector.py::test_detector_on_real_frame` skips until Phase 1 frames are extracted.
+> `test_integration.py` requires Phase 3 (zone.py) and Phase 4 (event_counter.py) to be implemented.
 
 ---
 
