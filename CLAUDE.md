@@ -50,6 +50,8 @@ Each `src/` module has exactly one responsibility. **These isolation boundaries 
 
 ## Development Workflow
 
+> **GitHub-as-bridge workflow:** Claude Code authors all `src/` code and pushes to GitHub. Kaggle/Colab pulls and executes. See **`docs/WORKFLOW.md`** for the full protocol, ground rules, dos/don'ts, and per-phase commit responsibility table.
+
 1. **Read the phase plan before writing any code:**
    `docs/superpowers/plans/2026-04-13-trailer-counter-mvp.md`
 

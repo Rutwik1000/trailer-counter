@@ -6,7 +6,8 @@ models/
 
 # Data (large or regeneratable — do not commit)
 data/frames/
-data/results/
+# data/results/ — result JSONs ARE committed (small; primary pipeline output)
+data/outputs/
 
 # Python
 __pycache__/
