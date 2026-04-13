@@ -102,12 +102,15 @@ FILL EVENT FIRED
 
 ## Re-ID Pipeline
 
+> ⚠ **Dimensions pending Phase 0B verification.** The model ID and CLS token dimension below are from research and must be confirmed in Phase 0B before implementation. See ADR-006 for confirmed values and contingency paths.
+
 ```
 Vehicle crop (BGR)
-  → DINOv3 ViT-B/16 (facebook/dinov3-vitb16-pretrain-lvd1689m)
-      processor + model → CLS token → 1536-d feature vector
+  → Backbone (model ID confirmed in Phase 0B)
+      e.g. facebook/dinov3-vitb16-pretrain-lvd1689m → CLS token → 1536-d
+      OR   facebook/dinov2-base                     → CLS token →  768-d
   → SiteSense projection head (dinov3_reid_head.pth)
-      Linear(1536 → 256) → Linear(256 → 128) → L2 normalize
+      Linear(BACKBONE_DIM → 256) → ReLU → Linear(256 → 128) → L2 normalize
   → 128-d unit vector embedding
 
 Per-day gallery  {vehicle_id: embedding_vector}  (resets at day start):

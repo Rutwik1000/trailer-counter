@@ -52,6 +52,12 @@
 
 **Why deferred:** Cannot select a detector without seeing both perform on actual cab-view footage. The `Detector` wrapper class accepts `model_type="yolo"` or `"rfdetr"` — switching costs zero code change after evaluation.
 
+**Contingency C2A — if `Zaafan/sitesense-weights` RF-DETR weights are unavailable:**
+- Use `ultralytics/yolov8n.pt` (COCO pretrained) as the primary detector candidate
+- Evaluate YOLOv8n-COCO vs YOLOv8n fine-tuned on `keremberke/excavator-detector` in Phase 2
+- Update this ADR status to: "YOLOv8 only — SiteSense RF-DETR weights unavailable"
+- No code changes needed: the `Detector` wrapper already supports `model_type="yolo"`
+
 ---
 
 ## ADR-005: Day-Scoped Re-ID Gallery
@@ -68,15 +74,34 @@
 
 ## ADR-006: DINOv3 + SiteSense Projection Head for Re-ID
 
-**Status:** Accepted
+**Status:** Accepted — model ID and dimensions to be confirmed in Phase 0B
 
-**Decision:** Use `facebook/dinov3-vitb16-pretrain-lvd1689m` (86M params, CLS token → 1536-d) + SiteSense head (`dinov3_reid_head.pth`: Linear 1536→256 → Linear 256→128 → L2 normalize → 128-d).
+**Decision:** Use `facebook/dinov3-vitb16-pretrain-lvd1689m` (86M params, CLS token → 1536-d) + SiteSense head (`dinov3_reid_head.pth`: Linear 1536→256 → ReLU → Linear 256→128 → L2 normalize → 128-d).
 
 **Why:** SiteSense head is already domain-adapted to construction equipment from overhead/aerial views (96.8% accuracy on 12k construction contrastive pairs). No fine-tuning required for MVP.
 
 **Alternatives rejected:**
 - torchreid OSNet: trained on pedestrian data — wrong domain, features may not transfer well
 - Custom trained Re-ID: no labeled Re-ID data available for this specific camera setup
+
+**⚠ Phase 0B verification required:** The model ID `facebook/dinov3-vitb16-pretrain-lvd1689m` must be confirmed accessible on HuggingFace before Phase 5. Update the BACKBONE_ID and BACKBONE_DIM values below after running Phase 0B Task 0B.1 Step 2.
+
+```
+BACKBONE_ID  = [CONFIRM IN PHASE 0B]   # e.g. facebook/dinov3-vitb16-... or facebook/dinov2-base
+BACKBONE_DIM = [CONFIRM IN PHASE 0B]   # e.g. 1536 (DINOv3) or 768 (DINOv2-base)
+```
+
+**Contingency C1A — if backbone ID is DINOv2:**
+- Replace all `facebook/dinov3-vitb16-pretrain-lvd1689m` references with `facebook/dinov2-base`
+- CLS token dimension: 768-d (not 1536-d)
+- Projection head becomes: `Linear(768→256) → ReLU → Linear(256→128) → L2 norm`
+- Update `ARCHITECTURE.md` Re-ID Pipeline section with new dimensions
+
+**Contingency C2B — if SiteSense Re-ID head weights are unavailable:**
+- Use DINOv2 backbone CLS token directly as embedding (no projection head)
+- Dimension: 768-d L2-normalized vector stored in gallery
+- Cosine similarity on raw backbone features (accuracy may be lower — validate in Phase 5)
+- Update this ADR status: "SiteSense head unavailable — raw DINOv2 backbone embeddings used"
 
 ---
 
