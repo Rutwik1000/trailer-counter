@@ -156,27 +156,11 @@ for k, v in sample.items():
 
 **Record** the actual field name for the video bytes. Update Task 1.3 `sample["video"]["bytes"]` with the correct path.
 
-- [ ] **Step 4: Verify RF-DETR API (H2)**
+- [x] **Step 4: Verify RF-DETR API (H2)** ✓ confirmed 2026-04-13
 
-> ⚠ **INCOMPLETE — rfdetr was not installed when Step 4 was first run.** Install the package first, then run the cell below.
-
-```python
-!pip install rfdetr
-
-from rfdetr import RFDETRBase
-import inspect
-
-methods = [m for m in dir(RFDETRBase) if not m.startswith("_")]
-print("RFDETRBase public methods:", methods)
-
-# Check for the methods used in detector.py
-for expected in ["from_checkpoint", "predict"]:
-    print(f"  {expected}: {'FOUND' if expected in methods else 'MISSING'}")
-```
-
-**If `from_checkpoint` is missing:** Update `_load_model` in `src/detector.py` to use the correct constructor.
-**If `predict` is missing:** Update `_detect_rfdetr` to use the correct inference method name.
-**Once confirmed:** Remove the ⚠ note above and mark this step complete.
+Confirmed: `predict` FOUND, `from_checkpoint` MISSING.
+Constructor signature: `RFDETRBase(pretrain_weights="path/to/weights.pth")`.
+`_load_model` in Task 2.1 `detector.py` updated accordingly.
 
 - [ ] **Step 5: Document results**
 
@@ -592,9 +576,8 @@ class Detector:
             return YOLO(weights_path or "yolov8n.pt")
         elif model_type == "rfdetr":
             from rfdetr import RFDETRBase
-            if weights_path:
-                return RFDETRBase.from_checkpoint(weights_path)
-            return RFDETRBase()
+            # from_checkpoint does not exist — weights passed via constructor (confirmed Phase 0B H2)
+            return RFDETRBase(pretrain_weights=weights_path) if weights_path else RFDETRBase()
         else:
             raise ValueError(f"Unknown model_type: {model_type}")
 
