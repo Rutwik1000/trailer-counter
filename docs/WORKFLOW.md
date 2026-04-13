@@ -155,12 +155,26 @@ grep -c '"outputs": \[\]' notebooks/0N_phase.ipynb
 
 ### Result Commit Protocol (from Kaggle)
 
-```bash
-!git add data/results/
-!git diff --stat HEAD       # confirm ONLY result JSONs are staged
-!git commit -m "data: daily count results YYYY-MM-DD — phase N output"
-!git push origin HEAD:master  # HEAD:master works regardless of local branch name (main vs master)
+```python
+from kaggle_secrets import UserSecretsClient
+import os
+
+os.system("git config user.email 'kaggle@trailer-counter'")
+os.system("git config user.name 'Kaggle Executor'")
+os.system("git add data/results/")
+os.system("git diff --stat HEAD")   # confirm ONLY result JSONs are staged
+os.system("git commit -m 'data: daily count results YYYY-MM-DD — phase N output'")
+
+gh_token = UserSecretsClient().get_secret("github_token")
+remote_auth = "https://" + gh_token + "@github.com/Rutwik1000/trailer-counter.git"
+os.system("git remote set-url origin " + remote_auth)
+os.system("git push origin HEAD:master")
+os.system("git remote set-url origin https://github.com/Rutwik1000/trailer-counter.git")
+print("Pushed to master")
 ```
+
+**Required Kaggle Secret:** `github_token` — GitHub PAT with `repo` scope.
+Create at: github.com → Settings → Developer settings → Personal access tokens → Tokens (classic).
 
 Only commit after the full pipeline run completes without error. Never commit partial results.
 
