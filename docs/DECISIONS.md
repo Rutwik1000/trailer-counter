@@ -74,28 +74,23 @@
 
 ## ADR-006: DINOv3 + SiteSense Projection Head for Re-ID
 
-**Status:** Accepted — model ID and dimensions to be confirmed in Phase 0B
+**Status:** Contingency C1A activated — DINOv3 gated (user on waitlist), using DINOv2-base
 
-**Decision:** Use `facebook/dinov3-vitb16-pretrain-lvd1689m` (86M params, CLS token → 1536-d) + SiteSense head (`dinov3_reid_head.pth`: Linear 1536→256 → ReLU → Linear 256→128 → L2 normalize → 128-d).
+**Decision:** Use `facebook/dinov2-base` (CLS token → 768-d) + SiteSense head (`dinov3_reid_head.pth`: Linear 768→256 → ReLU → Linear 256→128 → L2 normalize → 128-d).
 
 **Why:** SiteSense head is already domain-adapted to construction equipment from overhead/aerial views (96.8% accuracy on 12k construction contrastive pairs). No fine-tuning required for MVP.
+
+**Phase 0B confirmed values (2026-04-13):**
+```
+BACKBONE_ID  = facebook/dinov2-base
+BACKBONE_DIM = 768
+```
+
+**DINOv3 access:** `facebook/dinov3-vitb16-pretrain-lvd1689m` is a gated repo — user is on the HuggingFace waitlist. If access is granted before Phase 5 begins, update `BACKBONE_ID` to the DINOv3 model ID, set `BACKBONE_DIM = 1536`, and update the projection head to `Linear(1536→256)`. Re-run Phase 0B Step 2 to confirm.
 
 **Alternatives rejected:**
 - torchreid OSNet: trained on pedestrian data — wrong domain, features may not transfer well
 - Custom trained Re-ID: no labeled Re-ID data available for this specific camera setup
-
-**⚠ Phase 0B verification required:** The model ID `facebook/dinov3-vitb16-pretrain-lvd1689m` must be confirmed accessible on HuggingFace before Phase 5. Update the BACKBONE_ID and BACKBONE_DIM values below after running Phase 0B Task 0B.1 Step 2.
-
-```
-BACKBONE_ID  = [CONFIRM IN PHASE 0B]   # e.g. facebook/dinov3-vitb16-... or facebook/dinov2-base
-BACKBONE_DIM = [CONFIRM IN PHASE 0B]   # e.g. 1536 (DINOv3) or 768 (DINOv2-base)
-```
-
-**Contingency C1A — if backbone ID is DINOv2:**
-- Replace all `facebook/dinov3-vitb16-pretrain-lvd1689m` references with `facebook/dinov2-base`
-- CLS token dimension: 768-d (not 1536-d)
-- Projection head becomes: `Linear(768→256) → ReLU → Linear(256→128) → L2 norm`
-- Update `ARCHITECTURE.md` Re-ID Pipeline section with new dimensions
 
 **Contingency C2B — if SiteSense Re-ID head weights are unavailable:**
 - Use DINOv2 backbone CLS token directly as embedding (no projection head)

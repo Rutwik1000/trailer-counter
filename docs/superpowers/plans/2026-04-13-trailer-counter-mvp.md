@@ -158,7 +158,11 @@ for k, v in sample.items():
 
 - [ ] **Step 4: Verify RF-DETR API (H2)**
 
+> ⚠ **INCOMPLETE — rfdetr was not installed when Step 4 was first run.** Install the package first, then run the cell below.
+
 ```python
+!pip install rfdetr
+
 from rfdetr import RFDETRBase
 import inspect
 
@@ -172,6 +176,7 @@ for expected in ["from_checkpoint", "predict"]:
 
 **If `from_checkpoint` is missing:** Update `_load_model` in `src/detector.py` to use the correct constructor.
 **If `predict` is missing:** Update `_detect_rfdetr` to use the correct inference method name.
+**Once confirmed:** Remove the ⚠ note above and mark this step complete.
 
 - [ ] **Step 5: Document results**
 
@@ -341,30 +346,24 @@ for sample in tqdm(ds):
     if video_count >= target_videos:
         break
 
-    # video is stored as bytes in the parquet
-    video_bytes = sample["video"]["bytes"]
-    video_array = np.frombuffer(video_bytes, dtype=np.uint8)
-    cap = cv2.VideoCapture()
-    cap.open(cv2.imdecode(video_array, cv2.IMREAD_UNCHANGED))
-
-    # Alternative: write bytes to temp file then open
-    tmp_path = f"/tmp/vid_{video_count}.mp4"
-    with open(tmp_path, "wb") as f:
-        f.write(video_bytes)
-
-    cap = cv2.VideoCapture(tmp_path)
-    total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-    step = max(1, total_frames // frames_per_video)
+    # sample["video"] is a torchcodec VideoDecoder object (confirmed Phase 0B)
+    # Each indexed frame returns a FrameBatch; .data is a CHW float32 RGB tensor [0,1]
+    video = sample["video"]
+    n_frames = len(video)
+    step = max(1, n_frames // frames_per_video)
 
     for i in range(frames_per_video):
-        cap.set(cv2.CAP_PROP_POS_FRAMES, i * step)
-        ret, frame = cap.read()
-        if ret:
-            out_path = f"data/frames/vid{video_count:02d}_frame{i:02d}.jpg"
-            cv2.imwrite(out_path, frame)
-            frames_saved += 1
+        frame_idx = i * step
+        if frame_idx >= n_frames:
+            break
+        frame_data = video[frame_idx].data  # CHW float32 RGB tensor
+        # Convert to HWC uint8 BGR for cv2
+        frame_np = (frame_data.permute(1, 2, 0).numpy() * 255).astype(np.uint8)
+        frame_bgr = cv2.cvtColor(frame_np, cv2.COLOR_RGB2BGR)
+        out_path = f"data/frames/vid{video_count:02d}_frame{i:02d}.jpg"
+        cv2.imwrite(out_path, frame_bgr)
+        frames_saved += 1
 
-    cap.release()
     video_count += 1
 
 print(f"Saved {frames_saved} frames from {video_count} videos")

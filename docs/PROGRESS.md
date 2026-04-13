@@ -6,12 +6,25 @@
 
 | Phase | Status | Last Updated |
 |---|---|---|
+| Phase 0B — Dependency Verification | Partial (H2 pending) | 2026-04-13 |
 | Phase 1 — Foundation & Data | Not started | 2026-04-13 |
 | Phase 2 — Detection Baseline | Not started | 2026-04-13 |
 | Phase 3 — Tracking + Zone | Not started | 2026-04-13 |
 | Phase 4 — Fill Event Counter *(first MVP)* | Not started | 2026-04-13 |
 | Phase 5 — Vehicle Re-ID | Not started | 2026-04-13 |
 | Phase 6 — Dashboard | Not started | 2026-04-13 |
+
+---
+
+## 2026-04-13 — Phase 0B complete (partial)
+
+**Completed:** C2 (SiteSense), C1 (backbone fallback confirmed), H1 (dataset schema)
+**Outstanding:** H2 (RF-DETR API) — needs `!pip install rfdetr` in notebook, then re-run Step 4
+**Key findings:**
+- `BACKBONE_ID = facebook/dinov2-base`, `BACKBONE_DIM = 768` — Contingency C1A activated (DINOv3 gated, user on waitlist)
+- `fuxi-robot` video field is a `VideoDecoder` object (torchcodec), not dict-with-bytes — Task 1.3 frame extraction code updated accordingly
+- SiteSense weights confirmed: `rfdetr_construction.pth` + `dinov3_reid_head.pth` both present
+**Next:** Re-run H2 with rfdetr installed, then begin Phase 1 on Kaggle
 
 ---
 
