@@ -340,9 +340,9 @@ for sample in tqdm(ds):
         frame_idx = i * step
         if frame_idx >= n_frames:
             break
-        frame_data = video[frame_idx].data  # CHW float32 RGB tensor
-        # Convert to HWC uint8 BGR for cv2
-        frame_np = (frame_data.permute(1, 2, 0).numpy() * 255).astype(np.uint8)
+        frame_data = video[frame_idx].data  # CHW uint8 RGB tensor [0,255] (confirmed Phase 1)
+        # Convert to HWC uint8 BGR for cv2 — do NOT multiply by 255
+        frame_np = frame_data.permute(1, 2, 0).numpy()
         frame_bgr = cv2.cvtColor(frame_np, cv2.COLOR_RGB2BGR)
         out_path = f"data/frames/vid{video_count:02d}_frame{i:02d}.jpg"
         cv2.imwrite(out_path, frame_bgr)
