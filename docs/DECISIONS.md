@@ -46,11 +46,17 @@
 
 ## ADR-004: RF-DETR as Primary Detector Candidate
 
-**Status:** Pending — to be evaluated in Phase 2
+**Status:** Contingency C2A active — YOLOv8n COCO selected (2026-04-14)
 
-**Decision:** Evaluate RF-DETR (SiteSense weights, `pip install rfdetr`) and YOLOv8n (COCO pretrained) on 10 fuxi-robot frames. Manually score both. Commit to the higher-performing one.
+**Decision:** YOLOv8n COCO pretrained (`yolov8n.pt`, confidence_threshold=0.15).
 
-**Why deferred:** Cannot select a detector without seeing both perform on actual cab-view footage. The `Detector` wrapper class accepts `model_type="yolo"` or `"rfdetr"` — switching costs zero code change after evaluation.
+**Why C2A activated:** RF-DETR SiteSense weights are present on disk but the `rfdetr` package fails to import on Kaggle's Python 3.12 environment — `ImportError: cannot import name 'KernelInfo' from 'huggingface_hub.hf_api'`. This is a known rfdetr/Python 3.12 incompatibility (documented in CLAUDE.md). RF-DETR evaluation was not possible.
+
+**YOLOv8n Phase 2 results (10 fuxi-robot frames, threshold=0.25):**
+- 6 total detections across 10 frames; 4 frames had 0 detections
+- Precision: good — boxes correctly placed on truck body where detected
+- Recall: low — expected, COCO truck class trained on street-level side views vs top-down cab footage
+- Threshold lowered to 0.15 in `config/detector_choice.json` before Phase 3 to reduce missed frames
 
 **Contingency C2A — if `Zaafan/sitesense-weights` RF-DETR weights are unavailable:**
 - Use `ultralytics/yolov8n.pt` (COCO pretrained) as the primary detector candidate

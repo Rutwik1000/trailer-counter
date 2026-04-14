@@ -1,7 +1,7 @@
 {
   "model_type": "yolo",
   "weights_path": "yolov8n.pt",
-  "confidence_threshold": 0.25,
+  "confidence_threshold": 0.15,
   "chosen_on": "2026-04-14",
   "reason": "YOLOv8n COCO selected — RF-DETR SiteSense weights unavailable on Kaggle Python 3.12 environment due to huggingface_hub KernelInfo ImportError (Contingency C2A active). ADR-004 status: YOLOv8n only."
 }
