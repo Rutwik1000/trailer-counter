@@ -184,7 +184,7 @@ How would you handle multi-detection deduplication in a tracking pipeline where 
 don't have ground truth labels to tune against?
 
 CODEBASE
-- GitHub: https://github.com/Rutwik1000/trailer-counter
+- GitHub: https://github.com//trailer-counter
 - Key files: src/detector.py, src/tracker.py, src/zone.py, config/detector_choice.json,
   config/loading_zone.json, docs/DECISIONS.md (9 ADRs), docs/ARCHITECTURE.md
 - All decisions are in docs/DECISIONS.md — please read ADR-001 through ADR-007
