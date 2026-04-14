@@ -8,13 +8,35 @@
 |---|---|---|
 | Phase 0B — Dependency Verification | Complete | 2026-04-13 |
 | Phase 1 — Foundation & Data | Complete | 2026-04-14 |
-| Phase 2 — Detection Baseline | Not started | 2026-04-13 |
+| Phase 2 — Detection Baseline | Complete | 2026-04-14 | 2026-04-13 |
 | Phase 3 — Tracking + Zone | Not started | 2026-04-13 |
 | Phase 4 — Fill Event Counter *(first MVP)* | Not started | 2026-04-13 |
 | Phase 5 — Vehicle Re-ID | Not started | 2026-04-13 |
 | Phase 6 — Dashboard | Not started | 2026-04-13 |
 
 ---
+
+## 2026-04-14 — Phase 2 complete
+
+**Files created:** src/detector.py, tests/test_detector.py, notebooks/02_detection.ipynb, config/detector_choice.json
+**Tests passing:** 13/13 non-skipped locally; 6 frame-dependent tests ran here on Kaggle
+**YOLOv8n detections:** 6 across 10 frames
+**RF-DETR detections:** 0 across 10 frames
+**DETECTOR RECOMMENDATION: YOLO**
+**Reason:** [fill in: e.g. 'RF-DETR tighter bbox on trucks, fewer FP' or 'YOLOv8 better recall']
+**Blocker:** None
+**Next:** Phase 3 — Tracking + Zone (BoxMOT BotSort + loading zone polygon calibration)
+
+## 2026-04-14 — Phase 2 complete
+
+**Files created:** src/detector.py, tests/test_detector.py, notebooks/02_detection.ipynb, config/detector_choice.json
+**Tests passing:** 13/13 non-skipped locally; 6 frame-dependent tests ran here on Kaggle
+**YOLOv8n detections:** 6 across 10 frames
+**RF-DETR detections:** 0 across 10 frames
+**DETECTOR RECOMMENDATION: YOLO**
+**Reason:** [fill in: e.g. 'RF-DETR tighter bbox on trucks, fewer FP' or 'YOLOv8 better recall']
+**Blocker:** None
+**Next:** Phase 3 — Tracking + Zone (BoxMOT BotSort + loading zone polygon calibration)
 
 ## 2026-04-14 — Phase 1 complete
 
