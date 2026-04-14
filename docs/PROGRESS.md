@@ -7,12 +7,26 @@
 | Phase | Status | Last Updated |
 |---|---|---|
 | Phase 0B — Dependency Verification | Complete | 2026-04-13 |
-| Phase 1 — Foundation & Data | Not started | 2026-04-13 |
+| Phase 1 — Foundation & Data | Complete | 2026-04-14 |
 | Phase 2 — Detection Baseline | Not started | 2026-04-13 |
 | Phase 3 — Tracking + Zone | Not started | 2026-04-13 |
 | Phase 4 — Fill Event Counter *(first MVP)* | Not started | 2026-04-13 |
 | Phase 5 — Vehicle Re-ID | Not started | 2026-04-13 |
 | Phase 6 — Dashboard | Not started | 2026-04-13 |
+
+---
+
+## 2026-04-14 — Phase 1 complete
+
+**Files created:** src/preprocessor.py, tests/test_preprocessor.py, notebooks/01_foundation.ipynb
+**Tests passing:** 9/9 in tests/test_preprocessor.py
+**Key findings:**
+- fuxi-robot VideoDecoder yields CHW uint8 RGB [0,255] — not float32 [0,1] as plan assumed. Frame conversion updated (no *255).
+- Frames confirmed: cab-mounted downward view, excavator arm visible, trailer in consistent loading position. Static polygon zone approach validated.
+- CLAHE preprocessing visually verified on sample frames — contrast enhancement working correctly.
+- 50 frames extracted from 5 videos (720×1280px, ~2265 frames/video).
+**Blocker:** None
+**Next:** Phase 2 — Detection Baseline (RF-DETR SiteSense weights vs YOLOv8n-COCO on 10 sample frames)
 
 ---
 
