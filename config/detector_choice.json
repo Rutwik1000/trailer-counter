@@ -1,0 +1,7 @@
+{
+  "model_type": "placeholder",
+  "weights_path": null,
+  "confidence_threshold": 0.25,
+  "chosen_on": null,
+  "reason": "Placeholder — updated after Kaggle runs 02_detection.ipynb and posts findings to PROGRESS.md"
+}
