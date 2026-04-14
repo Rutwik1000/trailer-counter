@@ -9,12 +9,22 @@
 | Phase 0B — Dependency Verification | Complete | 2026-04-13 |
 | Phase 1 — Foundation & Data | Complete | 2026-04-14 |
 | Phase 2 — Detection Baseline | Complete | 2026-04-14 | 2026-04-13 |
-| Phase 3 — Tracking + Zone | Not started | 2026-04-13 |
+| Phase 3 — Tracking + Zone | Complete | 2026-04-14 | 2026-04-13 |
 | Phase 4 — Fill Event Counter *(first MVP)* | Not started | 2026-04-13 |
 | Phase 5 — Vehicle Re-ID | Not started | 2026-04-13 |
 | Phase 6 — Dashboard | Not started | 2026-04-13 |
 
 ---
+
+## 2026-04-14 — Phase 3 complete
+
+**Files created:** src/tracker.py, src/zone.py, tests/test_zone.py, tests/test_tracker.py, notebooks/03_tracking_zone.ipynb, config/loading_zone.json
+**Tests passing:** 17 zone + 9 tracker locally (4 tracker tests ran on Kaggle)
+**Zone:** 4-point polygon calibrated, saved to config/loading_zone.json
+**Unique tracks over 30 frames:** 1
+**Persistent tracks (>=3 frames):** 1
+**Blocker:** None
+**Next:** Phase 4 — Fill Event Counter (event_counter.py state machine: zone_entry + departure = fill event)
 
 ## 2026-04-14 — Phase 2 complete
 
